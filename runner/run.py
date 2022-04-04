@@ -112,18 +112,26 @@ def preprocess():
                 break
         if seen is None:
             method['fields'] = []
+            method['score'] = 0
             seen = method
             methods.append(seen)
-        seen['fields'].append(method['field'])
+        if method['field'] not in seen['fields']:
+            seen['fields'].append(method['field'])
+
     for field in field_no_inits:
+        for method in methods:
+            if method['class'] == field['class'] and field['param'] in method['fields']:
+                method['score'] += 1
+
+    for field in field_no_inits:
+        max_score = -1
         candidate_method = None
-        max_size = 0
         for method in methods:
             if method['class'] == field['class']:
-                if field['param'] in method['fields'] and len(method['fields']) > max_size:
+                if field['param'] in method['fields'] and method['score'] > max_score:
                     candidate_method = method.copy()
-                    max_size = len(method['fields'])
-        if candidate_method is not None:
+                    max_score = method['score']
+        if (candidate_method is not None) and candidate_method['score'] > 1:
             del candidate_method['fields']
             candidate_method['location'] = "METHOD"
             candidate_method['inject'] = True
@@ -133,6 +141,7 @@ def preprocess():
             if candidate_method not in init_methods['fixes']:
                 init_methods['fixes'].append(candidate_method)
     uprint("Annotating as {}".format(data['ANNOTATION']['INITIALIZER']))
+
     init_methods_path = join(out_dir, "init_methods.json")
     with open(init_methods_path, 'w') as outfile:
         json.dump(init_methods, outfile)
