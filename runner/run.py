@@ -31,13 +31,14 @@ from tools import delete
 from tools import uprint
 from os.path import join
 
-if not (len(sys.argv) in [2, 3]):
-    raise ValueError("Needs one argument to run: diagnose/apply/pre/loop/clean")
+# if not (len(sys.argv) in [2, 3]):
+#     raise ValueError("Needs one argument to run: diagnose/apply/pre/loop/clean")
+data = json.load(open('config.json'))
 
-if int(len(sys.argv)) == 2:
-    data = json.load(open('config.json'))
-else:
-    data = json.load(open(sys.argv[2]))
+# if int(len(sys.argv)) == 2:
+#     data = json.load(open('config.json'))
+# else:
+#     data = json.load(open(sys.argv[2]))
 
 if 'REPO_ROOT_PATH' not in data:
     # By default, the path to the repo root (where the build command must be run) and the
@@ -97,17 +98,19 @@ def preprocess():
     build_project()
     if data['DEPTH'] < 0 or (not data['OPTIMIZED']):
         return
+
     fixes = tools.load_tsv_to_dict(out_dir + "/fixes.tsv")
     uprint("Detecting uninitialized class fields...")
-    field_no_inits = [x for x in fixes if (x['reason'] == 'FIELD_NO_INIT' and x['location'] == 'FIELD')]
+    fields = [x for x in fixes if (x['reason'] == 'FIELD_NO_INIT' and x['location'] == 'FIELD')]
+
     uprint("Detecting initializers...")
     raw_methods = tools.load_tsv_to_dict(method_path)
-    init_methods = {"fixes": []}
+
     methods = []
     for method in raw_methods:
         seen = None
         for discovered in methods:
-            if discovered['method'] == method['method'] and discovered['class'] == method['method']:
+            if discovered['method'] == method['method'] and discovered['class'] == method['class']:
                 seen = discovered
                 break
         if seen is None:
@@ -118,12 +121,13 @@ def preprocess():
         if method['field'] not in seen['fields']:
             seen['fields'].append(method['field'])
 
-    for field in field_no_inits:
+    for field in fields:
         for method in methods:
             if method['class'] == field['class'] and field['param'] in method['fields']:
                 method['score'] += 1
 
-    for field in field_no_inits:
+    init_methods = {"fixes": []}
+    for field in fields:
         max_score = -1
         candidate_method = None
         for method in methods:
@@ -190,7 +194,7 @@ def run():
     clean(full=False)
 
 
-command = sys.argv[1]
+command = "preprocess"
 prepare()
 if command == "preprocess":
     preprocess()
