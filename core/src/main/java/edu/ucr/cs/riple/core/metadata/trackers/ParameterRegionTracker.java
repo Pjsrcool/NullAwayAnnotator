@@ -12,8 +12,8 @@ public class ParameterRegionTracker extends AbstractRelation<TrackerNode> implem
 
     private final FixType fixType;
 
-    public ParameterRegionTracker(Path path) {
-        super(path);
+    public ParameterRegionTracker() {
+        super();
         this.fixType = FixType.PARAMETER;
     }
 

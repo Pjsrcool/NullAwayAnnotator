@@ -24,20 +24,13 @@
 
 package edu.ucr.cs.riple.core.explorers;
 
-import com.uber.nullaway.fixserialization.FixSerializationConfig;
 import edu.ucr.cs.riple.core.Annotator;
 import edu.ucr.cs.riple.core.FixType;
-import edu.ucr.cs.riple.core.metadata.graph.Node;
 import edu.ucr.cs.riple.core.metadata.index.Bank;
 import edu.ucr.cs.riple.core.metadata.index.Error;
 import edu.ucr.cs.riple.core.metadata.index.FixEntity;
-import edu.ucr.cs.riple.core.metadata.index.Result;
-import edu.ucr.cs.riple.core.metadata.method.MethodInheritanceTree;
-import edu.ucr.cs.riple.core.util.Utility;
 import edu.ucr.cs.riple.injector.Fix;
 import java.util.List;
-import java.util.stream.Collectors;
-import me.tongfei.progressbar.ProgressBar;
 
 public class ParameterExplorer extends AdvancedExplorer {
 
@@ -47,54 +40,10 @@ public class ParameterExplorer extends AdvancedExplorer {
   }
 
   @Override
-  protected void init() {}
-
-  @Override
-  protected void explore() {
-    int maxsize = MethodInheritanceTree.maxParamSize();
-    List<Node> allNodes = fixGraph.getAllNodes();
-    System.out.println("Scheduled for: " + maxsize + " builds for: " + allNodes.size() + " fixes");
-    ProgressBar pb = Utility.createProgressBar("Exploring Method Params: ", maxsize);
-    for (int i = 0; i < maxsize; i++) {
-      pb.step();
-      pb.setExtraMessage(
-          "Analyzing params at index: (" + (i + 1) + " out of " + maxsize + ") for all methods...");
-      int finalI1 = i;
-      List<Node> subList =
-          allNodes
-              .stream()
-              .filter(node -> node.fix.index.equals(finalI1 + ""))
-              .collect(Collectors.toList());
-      if (subList.size() == 0) {
-        continue;
-      }
-      FixSerializationConfig.Builder config =
-          new FixSerializationConfig.Builder()
-              .setSuggest(true, true)
-              .setAnnotations(annotator.nullableAnnot, "UNKNOWN")
-              .setParamProtectionTest(true, i)
-              .setOutputDirectory(annotator.dir.toString());
-      annotator.buildProject(config);
-      errorBank.saveState(false, true);
-      fixBank.saveState(false, true);
-      for (Node node : subList) {
-        Result<Error> errorComparison =
-            errorBank.compareByMethod(node.fix.className, node.fix.method, false);
-        node.setEffect(errorComparison.size, annotator.methodInheritanceTree, null);
-        node.analyzeStatus(errorComparison.dif);
-        if (annotator.depth > 0) {
-          node.updateTriggered(
-              fixBank
-                  .compareByMethod(node.fix.className, node.fix.method, false)
-                  .dif
-                  .stream()
-                  .map(fixEntity -> fixEntity.fix)
-                  .collect(Collectors.toList()));
-        }
-      }
-    }
-    pb.close();
-    System.out.println("Captured all methods behavior against nullability of parameters.");
+  protected void init() {
+    this.tracker = annotator.parameterRegionTracker;
+    fixGraph.updateUsages(tracker);
+    fixGraph.findGroups();
   }
 
   @Override

@@ -45,6 +45,10 @@ public abstract class AbstractRelation<T> {
     }
   }
 
+  public AbstractRelation(){
+    setup();
+  }
+
   protected void setup() {
     idHash = new HashMap<>();
   }

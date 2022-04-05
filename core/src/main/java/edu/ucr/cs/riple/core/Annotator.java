@@ -41,6 +41,7 @@ import edu.ucr.cs.riple.core.metadata.index.FixEntity;
 import edu.ucr.cs.riple.core.metadata.method.MethodInheritanceTree;
 import edu.ucr.cs.riple.core.metadata.trackers.FieldRegionTracker;
 import edu.ucr.cs.riple.core.metadata.trackers.MethodRegionTracker;
+import edu.ucr.cs.riple.core.metadata.trackers.ParameterRegionTracker;
 import edu.ucr.cs.riple.core.util.Utility;
 import edu.ucr.cs.riple.injector.Fix;
 import edu.ucr.cs.riple.injector.Injector;
@@ -71,6 +72,7 @@ public class Annotator {
 
   public MethodRegionTracker methodRegionTracker;
   public FieldRegionTracker fieldRegionTracker;
+  public ParameterRegionTracker parameterRegionTracker;
   public MethodInheritanceTree methodInheritanceTree;
 
   public static final Log log = new Log();
@@ -112,6 +114,7 @@ public class Annotator {
         new MethodInheritanceTree(dir.resolve(Serializer.METHOD_INFO_NAME));
     this.methodRegionTracker = new MethodRegionTracker(dir.resolve(Serializer.CALL_GRAPH_NAME));
     this.fieldRegionTracker = new FieldRegionTracker(dir.resolve(Serializer.FIELD_GRAPH_NAME));
+    this.parameterRegionTracker = new ParameterRegionTracker();
     Bank<Error> errorBank = new Bank<>(errorPath, Error::new);
     Bank<FixEntity> fixBank = new Bank<>(fixPath, FixEntity::new);
     this.explorers = new ArrayList<>();
